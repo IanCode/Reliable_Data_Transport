@@ -1,0 +1,10 @@
+# testing udp receive
+
+def got_it(ip, port, mess, ch):
+    print "From "+str(ip)+":"+str(port)+", I received "+str(mess)
+    stopcomm(ch)
+
+if callfunc == 'initialize':
+    ip = getmyip()
+    print('listening');
+    recvmess(ip, 63100, got_it)

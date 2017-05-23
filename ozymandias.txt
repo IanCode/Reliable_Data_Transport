@@ -1,0 +1,104 @@
+"""
+To pre-process
+python2 <repy_path>/repypp.py reliable_client.repy reliable_client
+
+To run [locally]
+[python2 <repy_path>/repy.py restrictions.text] reliable_client <in_file> <dest host> <port> <max dgram size> <retries> <timeout ms>
+"""
+
+#begin include reliable.repy
+"""
+This library contains functions that may be used by both the server and 
+the client (they don't necessarily have to be used by both). 
+"""
+
+def reliable_sendmess(destip, destport, message, srcip=None, srcport=None):
+    bytes_sent = sendmess(destip, destport, message, localip=None, localport=None)
+    return bytes_sent#number of characters (bytes) sent
+    #raise timeout error exception in case of a timeout
+    #message structure is as follows: 
+    #header field contains alternating bit
+    #<header><delimiter><payload>
+    header = '1'
+    message_structure = header + mycontext[DELIM] + message
+    
+def reliable_recvmess(srcip, srcport, function):
+    event_handle = recvmess(localip, localport, function)
+    return event_handle#handle to the Repy recvmess event
+
+# parametrize number of retransmissions when ACKs are not sent by timeout
+    # default 4 retransmissions with 10 ms timeout
+    # 0 or 0 causes no reported unacked messages
+    # 
+def reliable_config(maxdgramsize, retries, timeoutinms):
+    mycontext['maxdgramsize'] = maxdgramsize
+    mycontext['retries'] = retries
+    mycontext['timeout'] = float(timeoutinms) / 1000
+    
+if callfunc == 'initialize':
+    # Any defaults or globals can be set here. 
+    # Global values should be put in the mycontext dictionary.
+    # For example, here is a lock you can use for protecting 
+    # values in threaded callbacks 
+    mycontext['lock'] = getlock()
+    mycontext['DELIM'] = ', '
+
+
+##Stop and Wait (Alternating Bit) Summary: 
+
+# Sender Sends Frame
+# Sender waits for ACK from receiver 
+# If receiver receives a valid frame, it sends an ACK
+# If sender doesn't receive ACK after a certain time (timeout), 
+    # sender sends same frame again
+
+#transmitter usually adds redundancy check number to the end of each frame
+    # recieves uses this to check for possible damage
+    # good frame = ACK
+    # bad frame = no ACK
+
+#What if ACK is damaged or lost? 
+    # Reciever has two copies of the same frame
+    # sends two ACKS 
+    # problems for sender
+
+# Latency issues
+    # long latency can result in timeouts
+
+# solution: 
+    # one bit sequence number in the header of the frame
+    # number alternates from 0 to 1 in subsequent frames
+    # when receiver sends an ACK:
+        # ACK includes seq # of the next packet it expects
+        # receiver can detect duplicated frames 
+            # by detecgint if the frame sequence number alternate
+        # if two subsequent frames have the same sequence number,
+            # they are duplicates, and the second frame is discarded
+        # if two subsequent ACKs reference the same sequence number, 
+            # they are acknowledging the same frame
+#end include reliable.repy
+
+ #Send inputfile to host:portnum using srcip:srcport. Leave the partitioning 
+ #and reliability to reliable.repy
+def send_file(inputfile, host, portnum, srcip=None, srcport=None):
+    # Open the file, read it, and send it into to reliable_sendmess
+    file = open(inputfile, "r")
+    reliable_sendmess(host, portnum, 1	q`Afile)
+    pass
+
+
+if callfunc == 'initialize':
+    print("Starting client process")
+    # Arguments are accessed from the callargs array
+    # Pass argument values to reliable_config(), then call send_file()
+    infile = callargs[0] 
+    desthost = callargs[1]
+    port = callargs[2]
+    maxdgramsize = callargs[3]
+    retries = callargs[4]
+    timeout = callargs[5]
+    reliable_config(maxdgramsize, retries, timeout)
+    send_file(infile, desthost, port)
+
+
+
